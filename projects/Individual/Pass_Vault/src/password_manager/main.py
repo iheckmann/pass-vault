@@ -351,6 +351,16 @@ def list_entries(vault: VaultPath = DEFAULT_VAULT_PATH) -> None:
 
 
 @app.command()
+def count(vault: VaultPath = DEFAULT_VAULT_PATH) -> None:
+    """
+    Print how many entries are in the vault (just the number)
+    """
+    master = _prompt_master_password()
+    with _unlock_or_exit(vault, master) as unlocked:
+        print(len(unlocked.entries))
+        
+
+@app.command()
 def get(
     name: Annotated[str,
                     typer.Argument(help = "Entry name to retrieve")],
