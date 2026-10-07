@@ -352,12 +352,42 @@ def list_entries(vault: VaultPath = DEFAULT_VAULT_PATH) -> None:
 
 @app.command()
 def count(vault: VaultPath = DEFAULT_VAULT_PATH) -> None:
-    """
-    Print how many entries are in the vault (just the number)
-    """
     master = _prompt_master_password()
     with _unlock_or_exit(vault, master) as unlocked:
         print(len(unlocked.entries))
+
+@app.command()
+def search(
+    query: Annotated[str,
+                    typer.Argument(help = "Entry name to retrieve")],
+    vault: VaultPath = DEFAULT_VAULT_PATH,
+) -> None:
+
+    if not query:
+        console.print("[red]Search text cannot be empty.[/red]")
+        raise typer.Exit(code = 1)
+
+    master = _prompt_master_password()
+    # `with` ensures the AES key and plaintext entries are dropped
+    # as soon as the table has been printed. We render INSIDE the
+    # block because we still need to read the entries
+    with _unlock_or_exit(vault, master) as unlocked:
+        names = [
+            name for name in unlocked.names()
+            if query.lower() in name.lower()
+        ]
+        if not names:
+            console.print("[purple]No entries match that search.[/purple]")
+            return
+
+        table = Table(title = f"Entries in {vault}", show_lines = False)
+        table.add_column("name", style = "cyan", no_wrap = True)
+        table.add_column("username", style = "white")
+        table.add_column("updated", style = "dim")
+        for name in names:
+            entry = unlocked.entries[name]
+            table.add_row(name, entry.username, entry.updated_at)
+        console.print(table)
         
 
 @app.command()
