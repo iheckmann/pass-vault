@@ -261,7 +261,7 @@ def _unlock_or_exit(path: Path, master_password: str) -> UnlockedVault:
         raise typer.Exit(code = 1) from None
 
 
-def _render_entry(name: str, entry: Entry) -> Panel:
+def _render_entry(name: str, entry: Entry, show: bool = False) -> Panel:
     """
     Format an entry as a rich Panel for terminal display
 
@@ -271,7 +271,7 @@ def _render_entry(name: str, entry: Entry) -> Panel:
     """
     body_lines = [
         f"[bold]username[/bold]   {entry.username}",
-        f"[bold]password[/bold]   {entry.password}",
+        f"[bold]password[/bold]   {entry.password if show else '********'}",
     ]
     if entry.url:
         body_lines.append(f"[bold]url[/bold]        {entry.url}")
@@ -353,6 +353,9 @@ def list_entries(vault: VaultPath = DEFAULT_VAULT_PATH) -> None:
 
 @app.command()
 def count(vault: VaultPath = DEFAULT_VAULT_PATH) -> None:
+    """
+    Print how many entries are in the vault (just the number)
+    """
     master = _prompt_master_password()
     with _unlock_or_exit(vault, master) as unlocked:
         print(len(unlocked.entries))
@@ -364,7 +367,9 @@ def search(
                     typer.Argument(help = "Entry name to retrieve")],
     vault: VaultPath = DEFAULT_VAULT_PATH,
 ) -> None:
-
+    """
+    List entries whose name or username contains the given text (case-insensitive)
+    """
     if not query:
         console.print("[red]Search text cannot be empty.[/red]")
         raise typer.Exit(code = 1)
@@ -390,13 +395,16 @@ def search(
             entry = unlocked.entries[name]
             table.add_row(name, entry.username, entry.updated_at)
         console.print(table)
-        
 
 @app.command()
 def get(
     name: Annotated[str,
                     typer.Argument(help = "Entry name to retrieve")],
     vault: VaultPath = DEFAULT_VAULT_PATH,
+    show: Annotated[
+        bool,
+        typer.Option("--show", "-s", help = "Reveal the password"),
+    ] = False,
 ) -> None:
     """
     Show every field of one entry by name
@@ -415,7 +423,7 @@ def get(
         # inside the block to keep the lifecycle obvious
         unlocked.mark_used(name)
         unlocked.save()
-        console.print(_render_entry(name, entry))
+        console.print(_render_entry(name, entry, show))
 
 
 @app.command()

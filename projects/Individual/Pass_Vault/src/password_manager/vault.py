@@ -759,7 +759,9 @@ class UnlockedVault:
 
 
     def mark_used(self, name: str) -> Entry:
-        #record that an entry was used + return updated copy
+        """
+        Record that an entry was used + return updated copy
+        """
         entry = replace(self.get_entry(name), last_used_at = _now_iso())
         self.entries[name] = entry
         return entry
