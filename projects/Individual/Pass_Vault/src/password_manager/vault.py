@@ -381,6 +381,8 @@ class Entry:
     notes: str = ""
     created_at: str = field(default_factory = _now_iso)
     updated_at: str = field(default_factory = _now_iso)
+    last_used_at: str = field(default_factory = lambda: "")
+
 
     def to_dict(self) -> dict[str, str]:
         """
@@ -427,6 +429,8 @@ class Entry:
                                   ""),
             updated_at = data.get("updated_at",
                                   ""),
+            last_used_at = data.get("last_used_at",
+                                    ""),
         )
 
 
@@ -752,6 +756,14 @@ class UnlockedVault:
             return self.entries[name]
         except KeyError as exc:
             raise EntryNotFoundError(f"No entry named: {name}") from exc
+
+
+    def mark_used(self, name: str) -> Entry:
+        #record that an entry was used + return updated copy
+        entry = replace(self.get_entry(name), last_used_at = _now_iso())
+        self.entries[name] = entry
+        return entry
+
 
     def add_entry(
         self,

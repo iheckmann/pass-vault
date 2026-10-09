@@ -279,6 +279,7 @@ def _render_entry(name: str, entry: Entry) -> Panel:
         body_lines.append(f"[bold]notes[/bold]      {entry.notes}")
     body_lines.append(f"[dim]created    {entry.created_at}[/dim]")
     body_lines.append(f"[dim]updated    {entry.updated_at}[/dim]")
+    body_lines.append(f"[dim]last used    {entry.last_used_at}[/dim]")
     return Panel(
         "\n".join(body_lines),
         title = name,
@@ -356,6 +357,7 @@ def count(vault: VaultPath = DEFAULT_VAULT_PATH) -> None:
     with _unlock_or_exit(vault, master) as unlocked:
         print(len(unlocked.entries))
 
+
 @app.command()
 def search(
     query: Annotated[str,
@@ -411,6 +413,8 @@ def get(
         # entry is a frozen Entry instance — its fields remain
         # readable after the vault closes, but we still render
         # inside the block to keep the lifecycle obvious
+        unlocked.mark_used(name)
+        unlocked.save()
         console.print(_render_entry(name, entry))
 
 
